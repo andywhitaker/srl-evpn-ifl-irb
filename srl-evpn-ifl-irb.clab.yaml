@@ -1,4 +1,4 @@
-name: srl-evpn-irb
+name: srl-evpn-ifl-irb
 prefix: ""
 
 topology:

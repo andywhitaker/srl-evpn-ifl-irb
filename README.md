@@ -1,10 +1,16 @@
-# SR Linux EVPN with Symmetric IRB
+# SR Linux EVPN with Symmetric IRB (Interface-Less / Dual-Label Type-2)
+
+> [!NOTE]
+> **EVPN Symmetric IRB Architectural Variants in this Series:**
+> - **Method 1 (This Lab - Interface-Less with Dual-Label Type-2, RFC 9135):** [srl-evpn-ifl-irb](https://github.com/andywhitaker/srl-evpn-ifl-irb)
+> - **Method 2 (Interface-Less with Type-5 Host Routes, RFC 9136 §4.3):** [srl-evpn-type5-irb](https://github.com/andywhitaker/srl-evpn-type5-irb)
+> - **Method 3 (Interface-Ful with SBD, RFC 9136 §4.4):** [srl-evpn-iff-irb](https://github.com/andywhitaker/srl-evpn-iff-irb)
 
 ## Topology
 ![topology](lab-topology.png)
 
 ## Lab Description
-This lab demonstrates SR Linux EVPN using Symmetric IRB with interface-less inter-subnet routing. In this lab EVPN type-2 MAC routes are used to advertise MAC addresses between switches for populating mac-address tables and EVPN type-2 MAC-IP routes are used to advertise MAC-IP information for populating ARP tables.
+This lab demonstrates Nokia SR Linux EVPN using **Symmetric IRB with Interface-Less (IFL) routing** per **RFC 9135**. In this design, EVPN Type-2 MAC-IP routes advertise both the client MAC-VRF L2 VNI and the tenant IP-VRF L3 VNI (dual-label encapsulation: `10010 + 10000`). This allows a single BGP update to populate both L2 MAC tables and L3 host routing tables (`bgp-evpn-ifl-host`), terminating VXLAN traffic directly into the IP-VRF without an intermediate Supplementary Broadcast Domain (SBD).
 
 
 ## Containerlab Deployment
