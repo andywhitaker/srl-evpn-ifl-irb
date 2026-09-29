@@ -10,7 +10,32 @@
 ![topology](lab-topology.png)
 
 ## Lab Description
-This lab demonstrates Nokia SR Linux EVPN using **Symmetric IRB with Interface-Less (IFL) routing** per **RFC 9135**. In this design, EVPN Type-2 MAC-IP routes advertise both the client MAC-VRF L2 VNI and the tenant IP-VRF L3 VNI (dual-label encapsulation: `10010 + 10000`). This allows a single BGP update to populate both L2 MAC tables and L3 host routing tables (`bgp-evpn-ifl-host`), terminating VXLAN traffic directly into the IP-VRF without an intermediate Supplementary Broadcast Domain (SBD).
+This lab demonstrates **Nokia SR Linux EVPN using Symmetric IRB with Interface-Less (IFL) Dual-Label Routing**, standardized under **RFC 9135**.
+
+In this architecture:
+- **Dual-Label EVPN Type-2 Advertising:** Client MAC-VRFs (`app`, `web`) configure `interface-less-routing` to encode **dual labels/VNIs** on EVPN Type-2 MAC-IP routes (Label 1 = Client L2 VNI `10010`/`10020`, Label 2 = Tenant L3 VNI `10000`), accompanied by both L2 and L3 Route Targets.
+- **Single BGP Control Plane Message:** A single EVPN Type-2 route simultaneously populates the remote client MAC table for intra-subnet bridging and the remote tenant IP-VRF routing table (`bgp-evpn-ifl-host`) for inter-subnet routing.
+- **Direct IP-VRF Tunnel Termination:** The L3 VNI terminates directly in `network-instance tenant1 type ip-vrf` via `vxlan0.100 (type routed)`. No transit bridge domain (Supplementary Broadcast Domain / SBD) or unnumbered IRB interface is required.
+- **Optimized BGP Scale for Pure SR Linux:** Reduces BGP control plane prefix count by avoiding separate Type-5 host route advertisements for active endpoints, ideal for homogeneous Nokia SR Linux fabrics.
+
+---
+
+### Architectural Comparison: The Three Symmetric IRB Models
+
+| Architectural Dimension | Method 1: IFL Dual-Label (RFC 9135) | Method 2: IFL Type-5 Host Routes (RFC 9136 §4.3) | Method 3: IFF with SBD (RFC 9136 §4.4) |
+| :--- | :--- | :--- | :--- |
+| **Standard / Reference** | RFC 9135 | RFC 9136 Section 4.3 | RFC 9136 Section 4.4 |
+| **L3 VNI Network Instance** | `tenant1 (type ip-vrf)` | `tenant1 (type ip-vrf)` | `sbd (type mac-vrf)` |
+| **VXLAN Interface Type** | `vxlan0.100 (type routed)` | `vxlan0.100 (type routed)` | `vxlan0.100 (type bridged)` |
+| **Client MAC-VRF Type-2 Labels** | **Dual Labels:** `10010 + 10000` | **Single Label:** `10010` only | **Single Label:** `10010` only |
+| **Host Route Carrier** | EVPN Type-2 MAC-IP | **EVPN Type-5 IP Prefix (/32)** | **EVPN Type-5 IP Prefix (/32)** via SBD |
+| **Tenant Routing Table Type** | `bgp-evpn-ifl-host` | `bgp-evpn` | `bgp-evpn-iff` |
+| **Next-Hop Resolution** | Direct to Remote VTEP Tunnel | Direct to Remote VTEP Tunnel | Two-Stage via SBD Bridge Table |
+| **Inner Wire Payload** | Raw IPv4 / Direct L3 Payload | Raw IPv4 / Direct L3 Payload | Full Ethernet Frame (DMAC=Router MAC) |
+| **Multicast Support (OISM)** | Unsupported | Unsupported | Mandatory for RFC 9251 OISM |
+| **Target Use-Case** | Pure Nokia / Lowest BGP Prefix Count | Multi-Vendor / Hyperscale IP-VRFs | OISM Multicast & Legacy ASICs |
+
+---
 
 
 ## Containerlab Deployment
